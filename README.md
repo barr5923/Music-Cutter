@@ -27,7 +27,7 @@ Install FFmpeg using your preferred Windows package manager or from the official
 From this folder, create and activate a virtual environment, install the Python dependencies, and start the app:
 
 ```powershell
-py -3 -m venv .venv
+python -3 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 python main.py
