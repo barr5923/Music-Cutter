@@ -1,1 +1,0 @@
-"""Music Cutter desktop application."""

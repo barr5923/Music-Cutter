@@ -1,58 +1,69 @@
 # Music Cutter
 
-A Windows desktop application for trimming audio files and batch-cutting them from a CSV or Excel cue sheet.
+A self-contained, browser-only audio cutter. Trim one file or create a ZIP of clips from a CSV/Excel cue sheet. Audio and spreadsheets stay on your device: there is no backend, upload endpoint, account, analytics, or runtime CDN dependency.
 
-## Features
-
-- Cut a single audio file using start and end times.
-- Batch-cut multiple files from `.csv`, `.xlsx`, or `.xls` cue sheets.
-- Accept times as seconds (`83.5`), `MM:SS` (`1:23.500`), or `HH:MM:SS` (`0:01:23.500`).
-- Preserve the source audio by exporting each clip to a separate output file.
-
-## Requirements
-
-- Windows and Python 3.10 or newer
-- FFmpeg installed and available on `PATH`
-
-Check that FFmpeg is available in PowerShell:
-
-```powershell
-ffmpeg -version
-```
-
-Install FFmpeg using your preferred Windows package manager or from the official FFmpeg download links. The application uses pydub to call FFmpeg for decoding and encoding.
+[Open Music Cutter](https://barr5923.github.io/Music-Cutter/)
 
 ## Run
 
-From this folder, create and activate a virtual environment, install the Python dependencies, and start the app:
+Publish this folder on any HTTPS static host (for example, GitHub Pages). No Python, Node, installed FFmpeg, or build step is required for users. Open the site in a current desktop Chrome, Edge, Firefox, or Safari browser.
+
+For local development, use any static server. If Python is already installed:
 
 ```powershell
-py -3 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-python main.py
+python -m http.server 8000 --bind 127.0.0.1
 ```
 
-## Batch cue sheet format
+Open `http://127.0.0.1:8000`. Do not double-click the HTML file: web workers and offline caching require HTTP on localhost or HTTPS. FFmpeg runs inside a web worker using the bundled single-threaded WebAssembly core; cross-origin isolation headers are not required.
 
-The first row must contain these column names:
+## Single clip
+
+1. Select an audio file.
+2. Set start/end times as seconds (`83.5`), `MM:SS` (`1:23.500`), or `HH:MM:SS` (`0:01:23.500`). The player lets you preview the original and set markers from the playhead.
+3. Choose a filename and output format: MP3, WAV, M4A, FLAC, or OGG.
+4. Cut, preview, and download. The original is never changed.
+
+The browser's built-in player may not preview every source format FFmpeg can decode. Files without a supported audio stream, unreadable durations, and out-of-range cuts produce an error rather than a truncated successful export.
+
+## Batch clips
+
+1. Select a UTF-8 CSV or `.xlsx` workbook (first worksheet; legacy `.xls` is not supported).
+2. Select the source files, or choose a folder including its subfolders. Selecting one replaces the other selection.
+3. Cut and download one ZIP. Each output extension selects its encoder.
+
+Required columns (case-insensitive, with leading/trailing header spaces ignored):
 
 | input_file | start | end | output_file |
 | --- | --- | --- | --- |
-| audio\song.mp3 | 0:15 | 0:42.5 | song_intro.mp3 |
-| C:\Music\track.wav | 1:02 | 1:35 | clips\track_chorus.wav |
+| song.mp3 | 0:15 | 0:42.5 | song_intro.mp3 |
+| Audio/track.wav | 1:02 | 1:35 | clips/track_chorus.wav |
 
-- `input_file`: audio file path. Relative paths are resolved from the cue sheet's folder.
-- `start` and `end`: seconds, `MM:SS`, or `HH:MM:SS`; the end time is exclusive.
-- `output_file`: output file name/path. Relative paths are resolved from the output folder selected in the app. Absolute paths and paths that escape that folder are rejected.
-- CSV files should be UTF-8 encoded. `.xlsx` workbooks use the first worksheet.
+See [example-cues.csv](example-cues.csv). Input names must match selected files by filename or exact folder-relative path shown by the folder picker (including the selected root folder, such as `Audio/track.wav`). The browser cannot read absolute Windows paths from a spreadsheet. Names are matched case-insensitively; ambiguous filenames need folder-relative paths.
 
-Supported audio formats depend on the installed FFmpeg build.
+Output paths must be relative, with a supported audio extension. Duplicate outputs, path traversal, unsafe Windows filenames, missing sources, invalid times, and duplicate/missing columns are rejected. Excel time-formatted cells are accepted as timestamps; plain numeric cells are seconds. Use literal values, not spreadsheet formula cells.
 
-## Tests
+Cuts are processed sequentially. A failed batch shows the row number and does not offer a partial ZIP. Cancel stops processing and discards results, without changing source files.
 
-Run the standard-library unit tests with:
+## Offline use
 
-```powershell
-py -3 -m unittest discover -s tests -v
-```
+The service worker caches the complete application, local libraries, and the approximately 32 MB audio engine on the first visit. Wait for **Offline ready** before disconnecting. Reopen the same bookmarked address to work offline. No selected files or generated clips are persisted by the app.
+
+Offline access depends on browser storage availability; clearing site data or browser storage eviction removes it. Missing cache entries are restored on the next online visit. Private browsing may restrict caching. Keep the site open during processing. When deploying changes, bump the cache version in `service-worker.js`. An update takes effect after all existing app tabs are closed.
+
+## Limits
+
+- Source files: maximum 250 MB each. Cue sheets: maximum 10 MB.
+- Processing and ZIP creation use browser memory. Large sources, many clips, or low-memory devices can still exhaust memory. Use smaller batches when needed.
+- This version re-encodes audio for accurate cuts; it does not offer lossless compressed stream-copy or a waveform editor.
+- Exported audio does not preserve artwork or other original metadata.
+- Preview support depends on the browser; MP3/WAV are the most portable.
+
+## Browser tests
+
+Serve the project and open `http://127.0.0.1:8000/tests/browser.html`. The test runner checks timestamp/CSV parsing, spreadsheet/file matching and validation, Excel round trips, real FFmpeg encoding in all five formats, audio duration/content, and ZIP contents. It needs no test package installation.
+
+## Bundled libraries
+
+The checked-in `vendor` folder is what ships; `package.json` records exact upstream versions. No `npm install` is needed to run or test this application. The UI and audio worker always use the local copies, not a CDN. Preserve the included notices and license files when distributing; see [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt) for versions, source links, and license obligations.
+
+The previous Python/Tkinter desktop implementation has been replaced by this static web app.

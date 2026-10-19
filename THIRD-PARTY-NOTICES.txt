@@ -1,0 +1,27 @@
+Music Cutter bundles these unmodified open-source browser libraries:
+
+@ffmpeg/ffmpeg 0.12.15 - MIT
+  Source: https://github.com/ffmpegwasm/ffmpeg.wasm
+  Package source: https://registry.npmjs.org/@ffmpeg/ffmpeg/-/ffmpeg-0.12.15.tgz
+  License: vendor/ffmpeg/LICENSE
+
+@ffmpeg/core 0.12.10 - GPL-2.0-or-later
+  Single-threaded FFmpeg WebAssembly core.
+  Source and build scripts: https://github.com/ffmpegwasm/ffmpeg.wasm
+  Corresponding source/build tree: https://github.com/ffmpegwasm/ffmpeg.wasm/tree/v12.15
+  Package: https://registry.npmjs.org/@ffmpeg/core/-/core-0.12.10.tgz
+  Underlying FFmpeg 5.1.4 sources: https://github.com/FFmpeg/FFmpeg/tree/n5.1.4
+  Licenses: vendor/core/LICENSE, COPYING.GPLv2, COPYING.GPLv3, COPYING.LGPLv2.1
+  The core includes third-party audio codecs; source/build recipes are in the upstream repository.
+  This core is free software under the GNU GPL version 2 or later, without warranty.
+  Redistributors must comply with its source-code and license obligations.
+
+ExcelJS 4.4.0 - MIT
+  Source: https://github.com/exceljs/exceljs/tree/v4.4.0
+  Package: https://registry.npmjs.org/exceljs/-/exceljs-4.4.0.tgz
+  License: vendor/exceljs/LICENSE
+
+JSZip 3.10.1 - MIT OR GPL-3.0-or-later (used under MIT)
+  Source: https://github.com/Stuk/jszip/tree/v3.10.1
+  Package: https://registry.npmjs.org/jszip/-/jszip-3.10.1.tgz
+  License: vendor/jszip/LICENSE.markdown

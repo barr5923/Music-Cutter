@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#122a31">
+  <meta name="description" content="Cut audio on your device. No uploads, accounts, or installations.">
+  <title>Music Cutter</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+  <script src="vendor/ffmpeg/ffmpeg.js" defer></script>
+  <script src="vendor/exceljs/exceljs.min.js" defer></script>
+  <script src="vendor/jszip/jszip.min.js" defer></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="./"><span class="brand-icon" aria-hidden="true">mc</span> Music Cutter</a>
+    <span class="privacy"><span class="dot"></span> 100% on your device</span>
+  </header>
+  <main>
+    <section class="intro">
+      <p class="eyebrow">YOUR AUDIO. JUST THE GOOD PARTS.</p>
+      <h1>Make the cut.</h1>
+      <p class="lede">Trim a track or turn a cue sheet into a whole set of clips.<br>No uploads. No installs. Just your browser.</p>
+    </section>
+    <div class="workspace">
+      <div class="editor">
+        <div class="mode-tabs" role="tablist" aria-label="Cutting mode">
+          <button id="single-tab" role="tab" aria-selected="true" aria-controls="single-panel" tabindex="0">Single clip</button>
+          <button id="batch-tab" role="tab" aria-selected="false" aria-controls="batch-panel" tabindex="-1">Batch from spreadsheet</button>
+        </div>
+        <section id="single-panel" role="tabpanel" aria-labelledby="single-tab">
+          <form id="single-form">
+            <fieldset id="single-fields">
+              <legend class="sr-only">Single audio clip</legend>
+              <label class="file-zone" for="source">
+                <span class="file-symbol" aria-hidden="true">+</span>
+                <strong>Choose your audio</strong>
+                <span>MP3, WAV, M4A, AAC, FLAC, OGG and more</span>
+                <input id="source" type="file" accept="audio/*,.flac,.m4a,.wma">
+              </label>
+              <p id="source-name" class="file-note">Nothing selected yet. Your original file is never changed.</p>
+              <audio id="player" controls preload="metadata" hidden></audio>
+              <div class="section-heading"><h2>Set your clip</h2><span>Seconds or MM:SS / HH:MM:SS</span></div>
+              <div class="time-grid">
+                <label>Start time<input id="start" value="0:00" required autocomplete="off" placeholder="0:00"></label>
+                <label>End time<input id="end" required autocomplete="off" placeholder="0:30"></label>
+              </div>
+              <div class="marker-actions">
+                <button type="button" id="mark-start" class="text-button">Use playhead as start</button>
+                <button type="button" id="mark-end" class="text-button">Use playhead as end</button>
+              </div>
+              <div class="output-grid">
+                <label>Output name<input id="output-name" value="my-clip" required maxlength="160"></label>
+                <label>Format<select id="format"><option value="mp3">MP3</option><option value="wav">WAV</option><option value="m4a">M4A</option><option value="flac">FLAC</option><option value="ogg">OGG</option></select></label>
+              </div>
+              <button type="submit" class="primary" id="cut-single">Cut audio <span aria-hidden="true">&rarr;</span></button>
+            </fieldset>
+          </form>
+        </section>
+        <section id="batch-panel" role="tabpanel" aria-labelledby="batch-tab" hidden>
+          <form id="batch-form">
+            <fieldset id="batch-fields">
+              <legend class="sr-only">Spreadsheet batch cutting</legend>
+              <h2>One cue sheet. All your clips.</h2>
+              <p class="muted">Add a CSV or Excel (.xlsx) cue sheet, then select the audio files it references. Finished clips come in one ZIP.</p>
+              <label class="stack-label">1. Choose cue sheet<input id="sheet" type="file" accept=".csv,.xlsx" required></label>
+              <div class="section-heading"><h3>2. Select source audio</h3></div>
+              <label class="stack-label">Choose files<input id="batch-files" type="file" accept="audio/*,.flac,.m4a,.wma" multiple></label>
+              <label class="stack-label">Or choose an audio folder (including subfolders)<input id="batch-folder" type="file" webkitdirectory multiple></label>
+              <p id="batch-count" class="file-note">No source files selected.</p>
+              <details>
+                <summary>Cue sheet format</summary>
+                <p>Required columns: <code>input_file</code>, <code>start</code>, <code>end</code>, <code>output_file</code>.</p>
+                <p>Match selected files by filename or folder-relative path. Output extensions choose the format: .mp3, .wav, .m4a, .flac, .ogg.</p>
+                <a href="example-cues.csv" download>Download an example CSV</a>
+              </details>
+              <button type="submit" class="primary">Cut batch &amp; create ZIP <span aria-hidden="true">&rarr;</span></button>
+            </fieldset>
+          </form>
+        </section>
+        <section id="job" class="job" aria-live="polite" aria-atomic="true">
+          <div class="status-line"><p id="status">Ready when you are.</p><button id="cancel" class="text-button" hidden>Cancel</button></div>
+          <progress id="progress" max="100" value="0" hidden aria-label="Cutting progress"></progress>
+        </section>
+        <section id="result" class="result" hidden aria-labelledby="result-heading">
+          <h2 id="result-heading">Your cut is ready.</h2>
+          <p id="result-info"></p>
+          <audio id="result-player" controls hidden></audio>
+          <a id="download" class="primary" download>Download clip</a>
+        </section>
+      </div>
+      <aside class="sidebar">
+        <div class="side-card">
+          <span class="card-number">01 / PRIVATE BY DESIGN</span>
+          <h2>Your music stays yours.</h2>
+          <p>Files never leave this device. All trimming happens locally using FFmpeg inside your browser.</p>
+        </div>
+        <div class="side-card">
+          <span class="card-number">02 / READY TO GO OFFLINE</span>
+          <h2>No connection? No problem.</h2>
+          <p id="offline-status" role="status">Preparing offline access, including the audio engine (about 32 MB)...</p>
+        </div>
+        <div class="tips">
+          <h3>A small note on big files</h3>
+          <p>Browser processing uses your device's memory. Each source file is limited to 250 MB. Batch cuts run one at a time.</p>
+        </div>
+      </aside>
+    </div>
+    <footer><span>Built for the parts you want to keep.</span><a href="THIRD-PARTY-NOTICES.txt">Open-source credits</a></footer>
+  </main>
+</body>
+</html>
